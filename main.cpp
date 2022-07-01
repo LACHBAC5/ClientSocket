@@ -1,8 +1,7 @@
 #include "ClientSocket.h"
+#include "md5.h"
 
 #include <iostream>
-
-#include "md5.h"
 
 /* browser get request
 GET /stw-cgi/attributes.cgi/attributes HTTP/1.1
@@ -21,16 +20,18 @@ std::string make_digest(std::string username, std::string password, std::string 
     return "Digest username=\""+username+"\", realm=\""+realm+"\", nonce=\""+nonce+"\", uri=\""+uri+"\", response=\""+response+"\", qop="+qop+", nc="+nc+", cnonce=\""+cnonce+"\"";
 }
 
+
+
 int main(int argc, char *argv[]){
-
-
-    std::string Digest = make_digest(argv[3], argv[4], "GET", "iPolis_00-09-18-52-39-00", "376cb247948cfa008a6ab98abd3d781a", "/stw-cgi/attributes.cgi/attributes", "auth", "00000001", "83ba2d99eed620dd");
+    std::string Digest = make_digest(argv[3], argv[4], "GET", "iPolis_00-09-18-52-39-00", "3ed405ba5412004a9d2484f62735d906", "/stw-cgi/attributes.cgi/attributes", "auth", "00000002", "83ba2d99eed620dd");
 
     lb::ClientSocket soc(argv[1], argv[2]);
     std::cout << soc.open_connection();
-    std::cout << soc.send_request("GET /stw-cgi/attributes.cgi/attributes HTTP/1.0\r\nHost: ivos.ddns.net:321\r\nWWW-Authenticate: " + Digest + "\r\n\r\n");
+    std::cout << soc.send_request("GET /stw-cgi/attributes.cgi/attributes HTTP/1.0\r\nHost: ivos.ddns.net:321\r\nAuthorization: " + Digest + "\r\n\r\n");
 
-    soc.fetch_response();
+    std::string response = soc.remove_header(soc.fetch_response());
+
+    std::cout << response << '\n';
 
     soc.close_connection();
 }

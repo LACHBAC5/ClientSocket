@@ -66,8 +66,7 @@ std::string lb::ClientSocket::fetch_response() const{
         out += data;
     }
 
-    std::cout << out << '\n';
-
+    /*
     // save status of the response
     lb::ClientSocket::status_code = lb::ClientSocket::check_status_code(out);
 
@@ -78,6 +77,9 @@ std::string lb::ClientSocket::fetch_response() const{
     int header_length = std::stoi(header_info.at("HEADER-LENGTH-TOTAL"));
     int message_length = std::stoi(header_info.at("Content-Length"));
     return out.substr(header_length, message_length);
+    */
+
+    return out;
 }
 
 std::string lb::ClientSocket::get_ip() {
@@ -88,8 +90,8 @@ std::string lb::ClientSocket::get_port() {
     return lb::ClientSocket::port_;
 }
 
-int lb::ClientSocket::get_status_code() {
-    return lb::ClientSocket::status_code;
+int lb::ClientSocket::get_status(const std::string& http_response) {
+    return std::stoi(http_response.substr(http_response.find(' ', 0)+1, 3));
 }
 
 std::map<std::string, std::string> lb::ClientSocket::parse_header_as_map(const std::string& http_response){
@@ -110,6 +112,9 @@ std::map<std::string, std::string> lb::ClientSocket::parse_header_as_map(const s
     return header;
 }
 
-int lb::ClientSocket::check_status_code(const std::string& http_response){
-    return std::stoi(http_response.substr(http_response.find(' ', 0)+1, 3));
+std::string lb::ClientSocket::remove_header(const std::string& http_response){
+    std::string http_response_body;
+    auto header_map = lb::ClientSocket::parse_header_as_map(http_response);
+    int header_length = std::stoi(header_map.at("HEADER-LENGTH-TOTAL"));
+    return http_response.substr(header_length, http_response.size()-header_length);
 }
