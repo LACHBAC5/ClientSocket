@@ -24,7 +24,7 @@ std::string make_digest(std::string username, std::string password, std::string 
 int main(int argc, char *argv[]){
 
 
-    std::string Digest = make_digest(argv[3], argv[4], "GET", "iPolis_00-09-18-52-39-00", "376cb247948cfa008a6ab98abd3d781a", "/stw-cgi/attributes.cgi/attributes", "auth", "00000002", "83ba2d99eed620dd");
+    std::string Digest = make_digest(argv[3], argv[4], "GET", "iPolis_00-09-18-52-39-00", "376cb247948cfa008a6ab98abd3d781a", "/stw-cgi/attributes.cgi/attributes", "auth", "00000001", "83ba2d99eed620dd");
 
     lb::ClientSocket soc(argv[1], argv[2]);
     std::cout << soc.open_connection();
