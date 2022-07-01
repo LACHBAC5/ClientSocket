@@ -118,3 +118,8 @@ std::string lb::ClientSocket::remove_header(const std::string& http_response){
     int header_length = std::stoi(header_map.at("HEADER-LENGTH-TOTAL"));
     return http_response.substr(header_length, http_response.size()-header_length);
 }
+
+std::string lb::ClientSocket::make_digest_access_string(const std::string& username, const std::string& password, const std::string& method, const std::string& realm, const std::string& nonce, const std::string& uri, const std::string& qop, const std::string& nc, const std::string& cnonce){
+    std::string response = md5(md5(username+':'+realm+':'+password)+':'+nonce+':'+nc+':'+cnonce+':'+qop+':'+md5(method+':'+uri));
+    return "Authorization: Digest username=\""+username+"\", realm=\""+realm+"\", nonce=\""+nonce+"\", uri=\""+uri+"\", response=\""+response+"\", qop=\""+qop+"\", nc="+nc+", cnonce=\""+cnonce+"\"";
+}

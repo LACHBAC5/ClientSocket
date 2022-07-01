@@ -10,6 +10,8 @@
 #include <string>
 #include <map>
 
+#include "md5.h"
+
 namespace lb{
     class ClientSocket{
         public:
@@ -32,6 +34,8 @@ namespace lb{
         static std::map<std::string, std::string> parse_header_as_map(const std::string&);
         static std::string remove_header(const std::string&);
         static int get_status(const std::string&);
+
+        static std::string make_digest_access_string(const std::string&, const std::string&, const std::string&, const std::string&, const std::string&, const std::string&, const std::string&, const std::string&, const std::string&);
 
         private:
         std::string ip_;

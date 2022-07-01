@@ -1,10 +1,10 @@
 all: main
 
-main: main.o ClientSocket.o Camera.o md5.o
-	g++ main.o ClientSocket.o Camera.o md5.o -o main.out
+main: main.o ClientSocket.o md5.o Camera.o
+	g++ main.o ClientSocket.o md5.o Camera.o -o main.out
 
 %.o: %.cpp
 	g++ -c $<
 
 clean:
-	rm main.o ClientSocket.o Camera.o
+	rm main.o ClientSocket.o
