@@ -1,7 +1,7 @@
 #include "ClientSocket.h"
 
 lb::ClientSocket::ClientSocket(const std::string& ip, const std::string& port) : ip_(ip), port_(port) {}
-
+lb::ClientSocket::ClientSocket() {}
 lb::ClientSocket::~ClientSocket() { close(lb::ClientSocket::sock); }
 
 int lb::ClientSocket::open_connection(){
@@ -66,35 +66,18 @@ std::string lb::ClientSocket::fetch_response() const{
         out += data;
     }
 
-    /*
-    // save status of the response
-    lb::ClientSocket::status_code = lb::ClientSocket::check_status_code(out);
-
-    // parse header info
-    const auto header_info = lb::ClientSocket::parse_header_as_map(out);
-
-    // cut header and return requested body
-    int header_length = std::stoi(header_info.at("HEADER-LENGTH-TOTAL"));
-    int message_length = std::stoi(header_info.at("Content-Length"));
-    return out.substr(header_length, message_length);
-    */
-
     return out;
 }
 
-std::string lb::ClientSocket::get_ip() {
-    return lb::ClientSocket::ip_;
+void lb::ClientSocket::set_info(const std::pair<std::string, std::string>& info){
+    ip_= info.first; port_= info.second;
 }
 
-std::string lb::ClientSocket::get_port() {
-    return lb::ClientSocket::port_;
+std::pair<std::string, std::string> lb::ClientSocket::get_info(){
+    return std::make_pair(ip_, port_);
 }
 
-int lb::ClientSocket::get_status(const std::string& http_response) {
-    return std::stoi(http_response.substr(http_response.find(' ', 0)+1, 3));
-}
-
-std::map<std::string, std::string> lb::ClientSocket::parse_header_as_map(const std::string& http_response){
+std::map<std::string, std::string> lb::ClientSocket::htom(const std::string& http_response){
     std::map<std::string, std::string> header;
 
     int header_size = http_response.find("\r\n\r\n");
@@ -112,14 +95,46 @@ std::map<std::string, std::string> lb::ClientSocket::parse_header_as_map(const s
     return header;
 }
 
-std::string lb::ClientSocket::remove_header(const std::string& http_response){
-    std::string http_response_body;
-    auto header_map = lb::ClientSocket::parse_header_as_map(http_response);
+int lb::ClientSocket::status_code(const std::string& http_response) {
+    return std::stoi(http_response.substr(http_response.find(' ', 0)+1, 3));
+}
+
+std::string lb::ClientSocket::rmHeader(const std::string& http_response){
+    auto header_map = lb::ClientSocket::htom(http_response);
     int header_length = std::stoi(header_map.at("HEADER-LENGTH-TOTAL"));
     return http_response.substr(header_length, http_response.size()-header_length);
 }
 
-std::string lb::ClientSocket::make_digest_access_string(const std::string& username, const std::string& password, const std::string& method, const std::string& realm, const std::string& nonce, const std::string& uri, const std::string& qop, const std::string& nc, const std::string& cnonce){
-    std::string response = md5(md5(username+':'+realm+':'+password)+':'+nonce+':'+nc+':'+cnonce+':'+qop+':'+md5(method+':'+uri));
-    return "Authorization: Digest username=\""+username+"\", realm=\""+realm+"\", nonce=\""+nonce+"\", uri=\""+uri+"\", response=\""+response+"\", qop=\""+qop+"\", nc="+nc+", cnonce=\""+cnonce+"\"";
+std::string lb::ClientSocket::rmBody(const std::string& http_response){
+    auto header_map = lb::ClientSocket::htom(http_response);
+    int header_length = std::stoi(header_map.at("HEADER-LENGTH-TOTAL"));
+    return http_response.substr(0, header_length);
 }
+
+std::string lb::ClientSocket::gen_request(const std::string& method, const std::string& uri, const std::vector<std::vector<std::string>>& args){
+    std::string request = method + ' ' + uri + " HTTP/1.0";
+    for(int i = 0; i < args.size(); i++){
+        request += "\r\n"+args[i][0] + ": ";
+        for(int o = 1; o < args[i].size()-1; o++){
+            request += args[i][o] + ", ";
+        }
+        request += args[i][args[i].size()-1];
+    }
+    request += "\r\n\r\n";
+
+    return request;
+}
+
+std::string lb::ClientSocket::gen_auth_response_single(std::string (*encfunction)(std::string) , const HeaderData& data){
+    std::string auth_response, HA1, HA2;
+    HA1 = encfunction(data.username+':'+data.realm+':'+data.password); HA2 = encfunction(data.method+':'+data.uri);
+    if(data.qop == "auth" || data.qop == "auth-int"){
+        auth_response = encfunction(HA1+':'+data.nonce+':'+data.nc+':'+data.cnonce+':'+data.qop+':'+HA2);
+    }
+    else
+    {
+        auth_response = encfunction(HA1+':'+data.nonce+':'+HA2);
+    }
+    return auth_response;
+}
+
