@@ -31,17 +31,17 @@ namespace lb{
     class ClientSocket{
         public:
         
-        ClientSocket(const std::string&, const std::string&);
+        ClientSocket(const std::string& ip, const std::string& port);
         ClientSocket();
         ~ClientSocket();
 
         int open_connection();
         int close_connection();
 
-        int send_request(const std::string&) const;
+        int send_request(const std::string& request) const;
         std::string fetch_response() const;
 
-        void set_info(const std::pair<std::string, std::string>&);
+        void set_info(const std::pair<std::string, std::string>& info);
         std::pair<std::string, std::string> get_info();
 
 
@@ -51,14 +51,14 @@ namespace lb{
         ClientSocket& operator=(ClientSocket&&) = delete;
 
 
-        static std::map<std::string, std::string> htom(const std::string&);
-        static int status_code(const std::string&);
+        static std::map<std::string, std::string> htom(const std::string& http_response);
+        static int status_code(const std::string& http_response);
 
-        static std::string rmHeader(const std::string&);
-        static std::string rmBody(const std::string&);
+        static std::string rmHeader(const std::string& http_response);
+        static std::string rmBody(const std::string& http_response);
 
-        static std::string gen_request(const std::string&, const std::string&, const std::vector<std::vector<std::string>>&);
-        static std::string gen_auth_response_single(std::string (*)(std::string), const HeaderData&);
+        static std::string gen_request(const std::string& method, const std::string& uri, const std::vector<std::vector<std::string>>& args={{}}, const std::string& body="");
+        static std::string gen_auth_response_single(std::string (*encfunction)(std::string) , const HeaderData& data);
 
         private:
         std::string ip_;

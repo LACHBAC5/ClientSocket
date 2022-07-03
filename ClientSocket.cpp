@@ -111,7 +111,7 @@ std::string lb::ClientSocket::rmBody(const std::string& http_response){
     return http_response.substr(0, header_length);
 }
 
-std::string lb::ClientSocket::gen_request(const std::string& method, const std::string& uri, const std::vector<std::vector<std::string>>& args){
+std::string lb::ClientSocket::gen_request(const std::string& method, const std::string& uri, const std::vector<std::vector<std::string>>& args, const std::string& body){
     std::string request = method + ' ' + uri + " HTTP/1.0";
     for(int i = 0; i < args.size(); i++){
         request += "\r\n"+args[i][0] + ": ";
@@ -119,6 +119,9 @@ std::string lb::ClientSocket::gen_request(const std::string& method, const std::
             request += args[i][o] + ", ";
         }
         request += args[i][args[i].size()-1];
+    }
+    if(body.size() > 0){
+        request += "\r\n\r\n" + body;
     }
     request += "\r\n\r\n";
 
