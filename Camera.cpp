@@ -8,8 +8,14 @@ lb::Camera::Camera(const std::string& ip, const std::string& port, const std::st
 
 lb::Camera::~Camera() {}
 
-std::string lb::Camera::send_request(const std::string& cgi, const std::string& msubmenu, const std::string& action, const std::string& channel, const std::string& setting, const std::string& value){
-    info.uri = "/stw-cgi/"+cgi+"?msubmenu="+msubmenu+"&action="+action+"&Channel="+channel+"&"+setting+"="+value;
+std::string lb::Camera::send_request(const std::string& cgi, const std::string& msubmenu, const std::string& action, std::vector<std::pair<std::string, std::string>> settings){
+    info.uri = "/stw-cgi/"+cgi+"?msubmenu="+msubmenu+"&action="+action;
+
+    for(const auto& [name, value] : settings){
+        info.uri += '&'+name+'='+value;
+    }
+    
+    
     info.response = cs.gen_auth_response_single(md5, info);
 
     std::string auth_args = "Digest username=\""+info.username+"\", realm=\""+info.realm+"\", nonce=\""+info.nonce+"\", uri=\""+info.uri+"\", response=\""+info.response+"\", qop=\""+info.qop+"\", nc="+info.nc+", cnonce=\""+info.cnonce+"\"";
