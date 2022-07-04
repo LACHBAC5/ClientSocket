@@ -8,7 +8,7 @@ lb::Camera::Camera(const std::string& ip, const std::string& port, const std::st
 
 lb::Camera::~Camera() {}
 
-std::string lb::Camera::send_request(const std::string& cgi, const std::string& msubmenu, const std::string& action, std::vector<std::pair<std::string, std::string>> settings){
+std::string lb::Camera::send_request(const std::string& cgi, const std::string& msubmenu, const std::string& action, const std::vector<std::pair<std::string, std::string>>& settings){
     info.uri = "/stw-cgi/"+cgi+"?msubmenu="+msubmenu+"&action="+action;
 
     for(const auto& [name, value] : settings){
