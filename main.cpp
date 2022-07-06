@@ -5,12 +5,18 @@
 #include <map>
 
 int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=USERNAME, argv[4]=PASSWORD
+    // todo:
+    // load from web function
+    // load commant for interface
+    // erase argument commant for interface
+    // print argument commant for interface
+    // better error checking
 
     lb::Camera a(argv[1], argv[2], argv[3], argv[4]);
     a.load_from_file("cgis.xml");
 
     std::map<std::string, std::string> args;
-    std::array<std::string, 3> path;
+    std::vector<std::pair<std::string, std::string>> path;
 
     int top = 0;
 
@@ -29,13 +35,14 @@ int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=USERNAME
                     args.clear();
                 }
             }
-            a.previous();
-            top--;
+            if(a.previous()){
+                top--;
+            }
         }
         else if(message == "quit"){
             if(args.size() > 0){
-                std::cout << "Save changes?(y) >"; std::cin>>message;
-                if(message == "y"){
+                std::cout << "Save changes?\nyes/no>"; std::cin>>message;
+                if(message == "yes"){
                     std::cout << a.send_request(path, args) << '\n';
                     args.clear();
                 }
@@ -43,6 +50,7 @@ int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=USERNAME
             quit = true;
         }
         else if(message == "save"){
+            path.erase(path.begin()+top, path.end());
             std::cout << a.send_request(path, args) << '\n';
             args.clear();
         }
@@ -56,11 +64,15 @@ int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=USERNAME
 
                 args[root_name] = message;
             }
-            else
+            else if(a.next(message))
             {
-                a.next(message);
-
-                path[top] = message;
+                if(top == path.size()){
+                    path.push_back(std::make_pair(root_name, message));
+                }
+                else
+                {
+                    path[top] = std::make_pair(root_name, message);
+                }
                 top++;
             }
         }

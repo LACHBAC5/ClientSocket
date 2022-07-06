@@ -14,14 +14,14 @@ namespace lb{
         Camera(const std::string& ip, const std::string& port, const std::string& username, const std::string& password);
         ~Camera();
 
-        std::string send_request(const std::array<std::string, 3>& path, const std::map<std::string, std::string>& args);
+        std::string send_request(const std::vector<std::pair<std::string, std::string>>& path, const std::map<std::string, std::string>& args);
 
         void load_from_file(const std::string& path);
         void load_from_web(const std::string& path);
 
         void print_layer();
-        void next(const std::string& name);
-        void previous();
+        bool next(const std::string& name);
+        bool previous();
 
         std::string get_root_name();
 

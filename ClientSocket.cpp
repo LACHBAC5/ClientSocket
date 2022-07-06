@@ -60,7 +60,8 @@ std::string lb::ClientSocket::fetch_response() const {
     int bytes;
     // recieve data in 1024 bit chunks
     char data[1024];
-    while(bytes = recv(lb::ClientSocket::sock, data, 1023, 0)){
+    memset(data, '\0', 1024);
+    while(bytes = recv(lb::ClientSocket::sock, data, 1024, 0)){
         out += data;
     }
 
