@@ -7,9 +7,9 @@
 int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=USERNAME, argv[4]=PASSWORD
     // todo:
     // load from web function
-    // load commant for interface
-    // erase argument commant for interface
-    // print argument commant for interface
+    // load command for interface
+    // erase argument command for interface
+    // print argument command for interface
     // better error checking
 
     lb::Camera a(argv[1], argv[2], argv[3], argv[4]);
