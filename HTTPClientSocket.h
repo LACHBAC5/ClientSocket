@@ -24,7 +24,7 @@ namespace lb{
         void change_username(const std::string& username);
         void change_password(const std::string& password);
 
-        std::string send_http_request(const std::string& method, const std::string& uri, const std::vector<std::vector<std::string>>& args, const std::string& body);
+        std::string send_http_request(const std::string& method, const std::string& uri, const std::vector<std::vector<std::string>>& args={}, const std::string& body="");
         std::string fetch_http_header() const;
 
         static std::map<std::string, std::string> htom(const std::string& http_header);

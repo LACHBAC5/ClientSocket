@@ -1,11 +1,22 @@
 #include "Camera.h"
 
-lb::Camera::Camera(const std::string& ip, const std::string& port, const std::string& username, const std::string& password) : cs(ip, port) {}
+lb::Camera::Camera(const std::string& ip, const std::string& port, const std::string& username, const std::string& password) : cs(ip, port, username, password) {}
 
 lb::Camera::~Camera() {}
 
-std::string lb::Camera::send_request(const std::string& cgi, const std::string& msubmenu, const std::string& action, const std::vector<std::pair<std::string, std::string>>& settings){
-    return "";
+std::string lb::Camera::send_request(const std::array<std::string, 3>& path, const std::map<std::string, std::string>& args){
+    
+
+    std::string request = "/stw-cgi/" + path[0]+".cgi?msubmenu="+path[1]+"&action="+path[2];
+    for(const auto& [name, value] : args){
+        request += "&"+name+"="+value;
+    }
+
+    cs.open_connection();
+
+    std::string out = cs.send_http_request("GET", request);
+
+    return out;
 }
 
 void lb::Camera::load_from_file(const std::string& path){

@@ -14,7 +14,7 @@ namespace lb{
         Camera(const std::string& ip, const std::string& port, const std::string& username, const std::string& password);
         ~Camera();
 
-        std::string send_request(const std::string& cgi, const std::string& msubmenu, const std::string& action, const std::vector<std::pair<std::string, std::string>>& settings = {});
+        std::string send_request(const std::array<std::string, 3>& path, const std::map<std::string, std::string>& args);
 
         void load_from_file(const std::string& path);
         void load_from_web(const std::string& path);
