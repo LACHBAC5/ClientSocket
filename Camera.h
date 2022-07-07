@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <rapidxml/rapidxml.hpp>
+#include <algorithm>
 
 #include "HTTPClientSocket.h"
 
@@ -19,7 +20,7 @@ namespace lb{
         void load_from_file(const std::string& path);
         void load_from_web(const std::string& path);
 
-        void print_layer();
+        std::string get_layer(bool show_node_name=true, bool show_attrib_name=true, const std::vector<std::string>& attribute_names={});
         bool next(const std::string& name);
         bool previous();
 
