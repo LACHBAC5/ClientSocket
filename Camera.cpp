@@ -35,8 +35,28 @@ void lb::Camera::load_from_file(const std::string& path){
     while(std::getline(file, line) && line.size() != 0){
         text += line;
     }
-    doc.parse<0>(&text[0]);
 
+    doc.parse<0>(&text[0]);
+    root = doc.first_node()->first_node();
+}
+void lb::Camera::load_from_web(const std::string& path){
+    if(cs.open_connection()!=0){
+        return;
+    }
+    if(cs.status_code(cs.send_http_request("GET", path)) != 200){
+        return;
+    }
+    std::string text = cs.fetch_response(), forameted_text;
+
+    forameted_text += text[0];
+    for(int i = 1; i < text.size(); i++){
+        if(text[i-1] == '>' && text[i] == '<'){
+            forameted_text += '\n';
+        }
+        forameted_text += text[i];
+    }
+
+    doc.parse<0>(&forameted_text[0]);
     root = doc.first_node()->first_node();
 }
 
