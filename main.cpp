@@ -3,168 +3,182 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <rapidxml/rapidxml.hpp>
 
-std::string userPrompt(const std::string& message, const std::string& hint){
+std::vector<std::string> split(const std::string& message, const std::vector<std::string>& strs){
+    std::vector<std::string> out; int pos=0, index=0, itemSize=0, messageSize=message.size();
+    while(index < messageSize){
+        for(const auto& item : strs){
+            itemSize = item.size(); 
+            if(index+itemSize < messageSize && message.substr(index, itemSize) == item){
+                if(pos != index){
+                    out.push_back(message.substr(pos, index-pos));
+                }
+                index += itemSize-1; pos = index+1;
+                break;
+            }
+        }
+        index++;
+    }
+    if(pos != messageSize){
+        out.push_back(message.substr(pos, index-pos));
+    }
+    return out;
+}
+
+std::vector<std::string> userPrompt(const std::string& message, const std::string& hint){
     if(message.size() > 0){
         std::cout << message << '\n';
     }
     std::cout << hint << "> ";
     std::string input; std::getline(std::cin, input);
-
-    return input;
+    return split(input, {" "});
 }
 
-std::vector<std::string> split(const std::string& message, const std::string& splitters){
-    std::vector<std::string> out; int pos=0;
-    for(int i = 0; i < message.size(); i++){
-        if(std::find(splitters.begin(), splitters.end(), message[i]) != splitters.end()){
-            out.push_back(message.substr(pos, i-pos));
-            pos = i+1;
-        }
-        else if(i == message.size()-1){
-            out.push_back(message.substr(pos, i+1-pos));
+bool enterFolder(rapidxml::xml_node<char> ** dir, const std::string name){
+    if(!strcmp((*dir)->first_node()->name(), "parameter")){
+        return false;
+    }
+    for(auto i = (*dir)->first_node(); i != 0; i=i->next_sibling()){
+        auto name_attribute = i->first_attribute("name");
+        if(name_attribute != 0 && name_attribute->value() == name){
+            *dir = i;
+            return true;
         }
     }
-    return out;
+    return false;
 }
 
-int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT
-    lb::Camera cam(argv[1], argv[2]);
-    /*
-    bool authenticated = false;
-    while(!authenticated){
-        cam.change_username(userPrompt("Sign in:", "Username"));
-        cam.change_password(userPrompt("", "Password"));
-
-        if(cam.send_request({"stw-cgi", "image.cgi"}, {{"msubmenu", "imageenhancements"}, {"action", "view"}, {"Channel", "0"}}).size() > 0){
-            std::cout << "authenticated!\n\n";
-            authenticated = true;
-        }
-        else
-        {
-            std::cout << "wrong password or username!\n";
-        }
+bool exitFolder(rapidxml::xml_node<char> ** dir){
+    auto folder = (*dir)->parent();
+    if(folder == 0){
+        return false;
     }
-    */
+    *dir=folder;
+    return true;
+}
 
-    cam.load_from_file("cgis.xml");
+int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=username, argv[4]=password
+    // todo:
+    // !! configuration commands bug testing
+    // print origin command
+    // print configuration command
+    // readme helper commands
+    // undo/redo commands
+    // console authorization
 
-    std::string path = "/stw-cgi";
-    std::map<std::string, std::string> names;
-    std::map<std::string, std::string> parameters;
-    
+    lb::Camera cam(argv[1], argv[2], argv[3], argv[4]);
+    rapidxml::xml_document<char> doc;
+
+    std::string settings = cam.load_from_file("cgis.xml");
+    //std::string settings = cam.load_from_web("/stw-cgi/attributes.cgi/cgis");
+
+    doc.parse<0>(&settings[0]);
+    rapidxml::xml_node<char> * dir = doc.first_node();
+
+    lb::setting origin;  origin.REQpath = "/stw-cgi";
+
     bool quit=false;
     while(!quit){
-        std::vector<std::string> command = split(userPrompt("", "input"), " ");
+        std::vector<std::string> command = userPrompt("", "input");
+        /*
+        std::cout << "This is the command:\n";
+        for(int i = 0; i < command.size(); i++){
+            std::cout << i << ") " << command[i] << "|\n";
+        }
+        */
 
         if(command[0] == "quit"){
             quit = true;
-            break;
         }
         else if(command[0] == "cd"){
-            int slashPos=0, oldSlashPos=0;
             if(command[1] == ".."){
-                if(cam.previous()){
-                    std::string root_name = cam.get_root_name();
-
-                    if(names.find(root_name) != names.end()){
-                        names.erase(root_name);
-                    }
-                    else
-                    {
-                        while((slashPos=path.find('/', slashPos+1))!=std::string::npos){
-                            oldSlashPos = slashPos;
-                        }
-                        path.erase(path.begin()+oldSlashPos, path.end());
-                    }
+                if(!strcmp(dir->name(), "cgi")){
+                    origin.REQpath = "/stw-cgi";
                 }
+                exitFolder(&dir);
             }
             else
             {
-                while(slashPos!=command[1].size()){
-                    slashPos = slashPos=command[1].find('/', slashPos+1);
-                    if(slashPos==std::string::npos){
-                        slashPos = command[1].size();
+                // enters the next node after each '/' or at end of string
+                int pos=0, oldPos=0; std::string folder;
+                while(pos+1 < command[1].size()){
+                    if((pos=command[1].find('/', pos+1))<0){
+                        pos = command[1].size();
                     }
-                    std::string name = command[1].substr(oldSlashPos, slashPos-oldSlashPos);
-                    std::string root_name = cam.get_root_name();
-                    if(cam.get_root_name()!="parameter"&&cam.next({{"name", name}})){
-                        if(root_name == "cgi"){
-                            path += '/' + name + ".cgi";
-                        }
-                        else
-                        {
-                            names[root_name] = name;
-                        }
-                    }
-                    else
-                    {
-                        std::cout << "No such file or directory: " + name + "\n";
+                    folder = command[1].substr(oldPos, pos-oldPos);
+
+                    if(!enterFolder(&dir, folder)){
+                        std::cout << "Invalid directory: " << folder << '\n';
                         break;
                     }
-                    oldSlashPos = slashPos+1;
-                }
 
+                    // update origin
+                    if(!strcmp(dir->name(), "cgi")){
+                        origin.REQpath += "/" + folder + ".cgi";
+                    }
+                    else if(!strcmp(dir->name(), "submenu"))
+                    {
+                        origin.VIRpath["msubmenu"] = folder;
+                    }
+                    else
+                    {
+                        origin.VIRpath[dir->name()] = folder;
+                    }
+
+                    oldPos=pos+1;
+                }
             }
-            parameters.clear();
+            origin.parameters.clear();
+        }
+        else if(command[0] == "ls"){
+            for(auto i = dir->first_node(); i != 0; i=i->next_sibling()){
+                auto name_attribute = i->first_attribute("name");
+                if(name_attribute != 0){
+                    std::cout << name_attribute->value() << '\n';
+                }
+            }
         }
         else if(command[0] == "set"){
-            if(cam.get_root_name()=="parameter"){
-                if(cam.get_attrib({{"name", command[1]}})){
-                    // todo: add value checking
-                    parameters[command[1]] = command[2];
-                }
-                else
-                {
-                    std::cout << "No such parameter: " << command[1] << '\n';
-                }
+            if(!strcmp(dir->name(), "parameter")){
+                std::cout << "Only parameters can be set!\n";
             }
-            else
-            {
-                std::cout << "No such parameter: " << command[1] << '\n';
-            }
-        }
-        else if(command[0] == "erase"){
-            auto item = parameters.find(command[1]);
-            if(item != parameters.end()){
-                parameters.erase(item);
-            }
-            else
-            {
-                std::cout << "No such parameter saved!\n";
+            for(int i = 1; i < command.size(); i++){
+                int pos = command[i].find('=');
+                std::string name=command[i].substr(0, pos), value=command[i].substr(pos+1, command[i].size()-pos-1);
+                origin.parameters[name]=value;
             }
         }
         else if(command[0] == "save"){
-            if(parameters.size() > 0){
-                std::string out = cam.send_request(path, names, parameters);
-                if(out.size() > 0){
-                    std::cout << "done\n";
+            if(origin.parameters.size()>0){
+                // todo: better feedback
+                if(cam.apply_setting(origin)){
+                    std::cout << "OK\n";
                 }
                 else
                 {
-                    std::cout << "bad request!\n";
+                    std::cout << "Error!\n";
                 }
             }
             else
             {
-                std::cout << "There aren't any changes!\n";
+                std::cout << "No changes to save!\n";
             }
         }
-        else if(command[0] == "ls"){
-            std::cout << cam.get_layer(false, false, {"name"}) << '\n';
+        else if(command[0] == "create"){
+            cam.create_configuration(command[1]);
         }
-        else if(command[0] == "print"){
-            if(command[1] == "config"){
-
-            }
-            else if(command[1] == "unsaved"){
-
-            }
+        else if(command[0] == "delete"){
+            cam.delete_configuration(command[1]);
         }
-        else if(command[0] == "make"){
-            if(command[1] == "config"){
-
-            }
+        else if(command[0] == "add"){
+            cam.add_to_configuration(command[1], origin);
+        }
+        else if(command[0] == "remove"){
+            cam.rm_from_configuration(command[1], origin);
+        }
+        else if(command[0] == "apply"){
+            cam.set_active_configuration(command[1]);
         }
     }
 }

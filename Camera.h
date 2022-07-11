@@ -4,13 +4,22 @@
 #include <string>
 #include <fstream>
 #include <iostream>
-#include <rapidxml/rapidxml.hpp>
 #include <algorithm>
+#include <map>
+#include <vector>
 
 #include "HTTPClientSocket.h"
-#include "CameraConfiguration.h"
 
 namespace lb{
+
+    struct setting{
+        std::map<std::string, std::string> parameters;
+        std::map<std::string, std::string> VIRpath;
+        std::string REQpath; 
+    };
+
+    typedef std::vector<setting> Configuration;
+
     class Camera{
         public:
         Camera(const std::string& ip, const std::string& port, const std::string& username, const std::string& password);
@@ -20,27 +29,21 @@ namespace lb{
         void change_password(const std::string& password);
         void change_username(const std::string& username);
 
-        std::string send_request(const std::string& path, const std::map<std::string, std::string>& names, const std::map<std::string, std::string>& parameters);
+        bool apply_setting(const setting& sett);
+        bool apply_configuration(const Configuration& config);
 
-        void load_from_file(const std::string& path);
-        void load_from_web(const std::string& path);
+        std::string load_from_file(const std::string& path);
+        std::string load_from_web(const std::string& path);
 
-        std::string get_layer(bool show_node_name=true, bool show_attrib_name=true, const std::vector<std::string>& attribute_names={});
-        
-        bool next(const std::vector<std::pair<std::string, std::string>>& names);
-        bool previous();
-
-        std::string get_root_name();
-        bool get_attrib(const std::vector<std::pair<std::string, std::string>>& names);
-
+        bool create_configuration(const std::string& name);
+        bool delete_configuration(const std::string& name);
+        bool add_to_configuration(const std::string& name, const setting& setting);
+        bool rm_from_configuration(const std::string& name, const setting& setting);
+        bool set_active_configuration(const std::string& name);
 
         private:
         lb::HTTPClientSocket cs;
-
-        rapidxml::xml_document<char> doc;
-        rapidxml::xml_node<char> * root;
-
-        std::map<std::string, Configuration> config;
+        std::map<std::string, Configuration> configurations;
     };
 }
 

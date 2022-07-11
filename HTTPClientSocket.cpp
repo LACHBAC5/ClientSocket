@@ -9,15 +9,16 @@ namespace lb{
     void HTTPClientSocket::change_username(const std::string& username) { username_=username; }
     void HTTPClientSocket::change_password(const std::string& password) { password_=password; }
 
-    std::string HTTPClientSocket::send_http_request(const std::string& method, const std::string& uri, const std::vector<std::vector<std::string>>& args, const std::string& body){
+    std::string HTTPClientSocket::send_http_request(const std::string& method, const std::string& uri, const std::map<std::string, std::vector<std::string>>& args, const std::string& body){
         // generate request
         std::string message = method + ' ' + uri + " HTTP/1.0";
-        for(int i = 0; i < args.size(); i++){
-            message += "\r\n"+args[i][0] + ": ";
-            for(int o = 1; o < args[i].size()-1; o++){
-                message += args[i][o] + ", ";
+
+        for(const auto& [name, value] : args){
+            message += "\r\n"+name+":";
+            for(int i = 0; i < value.size()-1; i++){
+                message += value[i] + ", ";
             }
-            message += args[i][args[i].size()-1];
+            message += value[value.size()-1];
         }
 
         // add authorization
