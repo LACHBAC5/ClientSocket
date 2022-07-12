@@ -41,9 +41,12 @@ namespace lb{
         bool rm_from_configuration(const std::string& name, const setting& setting);
         bool set_active_configuration(const std::string& name);
 
+        Configuration get_configuration(const std::string& name);
+        bool find_configuration(const std::string& name);
+
         private:
         lb::HTTPClientSocket cs;
-        std::map<std::string, Configuration> configurations;
+        std::map<std::string, Configuration> configurations {{"default", {}}};
     };
 }
 

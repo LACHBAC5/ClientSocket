@@ -88,8 +88,8 @@ namespace lb{
         bool found=false;
         for(auto& currentSetting : item->second){
             if(currentSetting.VIRpath == setting.VIRpath && currentSetting.REQpath == setting.REQpath){
-                for(const auto& param : setting.parameters){
-                    currentSetting.parameters.insert(param);
+                for(const auto& [name, value] : setting.parameters){
+                    currentSetting.parameters[name] = value;
                 }
                 found=true; break;
             }
@@ -136,5 +136,14 @@ namespace lb{
         apply_configuration(item->second);
 
         return true;
+    }
+
+    Configuration Camera::get_configuration(const std::string& name){
+        auto item = configurations.find(name);
+        if(item == configurations.end()){
+            return {};
+        }
+
+        return item->second;
     }
 }
