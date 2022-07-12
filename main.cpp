@@ -35,7 +35,7 @@ std::vector<std::string> userPrompt(const std::string& message, const std::strin
     return split(input, {" "});
 }
 
-bool enterFolder(rapidxml::xml_node<char> ** dir, const std::string name){
+bool enterFolder(rapidxml::xml_node<char> ** dir, const std::string& name){
     if(!strcmp((*dir)->first_node()->name(), "parameter")){
         return false;
     }
@@ -56,6 +56,19 @@ bool exitFolder(rapidxml::xml_node<char> ** dir){
     }
     *dir=folder;
     return true;
+}
+
+bool checkName(rapidxml::xml_node<char> ** dir, const std::string& name){
+    if((*dir)->first_node() == 0){
+        return false;
+    }
+    for(auto i = (*dir)->first_node(); i != 0; i=i->next_sibling()){
+        auto name_attribute = i->first_attribute("name");
+        if(name_attribute != 0 && name_attribute->value() == name){
+            return true;
+        }
+    }
+    return false;
 }
 
 int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=username, argv[4]=password
@@ -183,7 +196,11 @@ int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=username
             for(int i = 2; i < command.size(); i++){
                 int pos = command[i].find('=');
                 std::string name=command[i].substr(0, pos), value=command[i].substr(pos+1, command[i].size()-pos-1);
-                // check if name exists in the current dir
+                // checks if name exists in the current dir
+                if(!checkName(&dir, name)){
+                    std::cout << "No such param in the current directory!\n";
+                    break;
+                }
                 origin.parameters[name]=value;
             }
 
