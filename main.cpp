@@ -224,18 +224,24 @@ int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=username
         }
         else if(command[0] == "print"){ // print the parameters of an existing configuration
             auto config = cam.get_configuration(command[1]);
-            std::cout << "name\n" << command[1] << '\n';
-            for(const auto& item : config){
+            if(config.size() > 0){
+                std::cout << "name\n" << command[1] << '\n';
+                for(const auto& item : config){
 
-                std::cout << "parameters\n";
-                for(const auto& [name, value] : item.parameters){
-                    std::cout << name << " = " << value << '\n';
+                    std::cout << "parameters\n";
+                    for(const auto& [name, value] : item.parameters){
+                        std::cout << name << " = " << value << '\n';
+                    }
+                    std::cout << "VIRpath\n";
+                    for(const auto& [name, value] : item.VIRpath){
+                        std::cout << name << " = " << value << '\n';
+                    }
+                    std::cout << "REQpath\n" << item.REQpath << '\n';
                 }
-                std::cout << "VIRpath\n";
-                for(const auto& [name, value] : item.VIRpath){
-                    std::cout << name << " = " << value << '\n';
-                }
-                std::cout << "REQpath\n" << item.REQpath << '\n';
+            }
+            else
+            {
+                std::cout << "Empty or deleted configuration!\n";
             }
         }
         else if(command[0] == "save"){ // save camera configurations to a file
