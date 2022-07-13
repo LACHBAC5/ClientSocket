@@ -72,13 +72,9 @@ bool checkName(rapidxml::xml_node<char> ** dir, const std::string& name){
 }
 
 int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=username, argv[4]=password
-    // todo:
-    // readme helper commands
-    // undo/redo commands
-
     // user authentication
-    lb::Camera cam(argv[1], argv[2], argv[3], argv[4]);
-    /*
+    //lb::Camera cam(argv[1], argv[2], argv[3], argv[4]);
+    
     lb::Camera cam(argv[1], argv[2]);
     bool authenticated = false;
     while(!authenticated){
@@ -93,7 +89,6 @@ int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=username
             std::cout << "wrong password or username!\n";
         }
     }
-    */
 
     // load xml settings menu
     rapidxml::xml_document<char> doc;
@@ -114,60 +109,54 @@ int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=username
             quit = true;
         }
         else if(command[0] == "cd"){ // navigation through name as an attribute of the "dir" node children
-            int pos=0, oldPos=0; std::string folder;
-            while(pos+1 < command[1].size()){
-                if((pos=command[1].find('/', pos+1))<0){
-                    pos = command[1].size();
-                }
-                folder = command[1].substr(oldPos, pos-oldPos);
+            std::string::const_iterator start=command[1].cbegin(), end=command[1].cend(), middle;
+            while(middle!=end){
+                middle=std::find(start, end, '/');
 
-                if(folder == ".."){
-                    if(!strcmp(dir->name(), "cgi")){
-                        origin.REQpath = "/stw-cgi";
+                if(middle-start>1){
+                    std::string folder(start, middle);
+                    if(folder == ".."){
+                        if(!strcmp(dir->name(), "cgi")){
+                            origin.REQpath = "/stw-cgi";
+                        }
+                        else
+                        {
+                            origin.VIRpath.erase(dir->name());
+                        }
+                        if(!strcmp(dir->name(), "cgis") || !exitFolder(&dir)){
+                            std::cout << "Invalid directory\n";
+                            break;
+                        }
+
+                        // update dir visible to the user
+                        userdir.erase(std::find(userdir.rbegin(), userdir.rend(), '/').base()-1, userdir.end());
                     }
                     else
                     {
-                        origin.VIRpath.erase(dir->name());
-                    }
-                    if(!strcmp(dir->name(), "cgis") || !exitFolder(&dir)){
-                        std::cout << "Invalid directory\n";
-                        break;
-                    }
+                        if(!enterFolder(&dir, folder)){
+                            std::cout << "Invalid directory: " << folder << '\n';
+                            break;
+                        }
 
-                    // update dir visible to the user
-                    int last_folder_pos = 0;
-                    while(userdir.find('/', last_folder_pos)!=std::string::npos){
-                        last_folder_pos=userdir.find('/', last_folder_pos)+1;
-                    }
-                    if(last_folder_pos > 0){
-                        userdir.erase(userdir.begin()+last_folder_pos-1, userdir.end());
+                        // update origin
+                        if(!strcmp(dir->name(), "cgi")){
+                            origin.REQpath += "/" + folder + ".cgi";
+                        }
+                        else if(!strcmp(dir->name(), "submenu"))
+                        {
+                            origin.VIRpath["msubmenu"] = folder;
+                        }
+                        else
+                        {
+                            origin.VIRpath[dir->name()] = folder;
+                        }
+
+                        // update dir visible to the user
+                        userdir += "/" + folder;
                     }
                 }
-                else
-                {
-                    if(!enterFolder(&dir, folder)){
-                        std::cout << "Invalid directory: " << folder << '\n';
-                        break;
-                    }
 
-                    // update origin
-                    if(!strcmp(dir->name(), "cgi")){
-                        origin.REQpath += "/" + folder + ".cgi";
-                    }
-                    else if(!strcmp(dir->name(), "submenu"))
-                    {
-                        origin.VIRpath["msubmenu"] = folder;
-                    }
-                    else
-                    {
-                        origin.VIRpath[dir->name()] = folder;
-                    }
-
-                    // update dir visible to the user
-                    userdir += "/"; userdir += folder;
-                }
-
-                oldPos=pos+1;
+                start=middle+1;
             }
             origin.parameters.clear();
         }
@@ -221,7 +210,7 @@ int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=username
             }
 
             if(!cam.rm_from_configuration(command[1], origin)){
-                std::cout << "No such configuration or path!\n";
+                std::cout << "No such configuration!\n";
             }
             else
             {
@@ -234,19 +223,26 @@ int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=username
             }
         }
         else if(command[0] == "print"){ // print the parameters of an existing configuration
-            auto item = cam.get_configuration(command[1]);
-            for(int i = 0; i < item.size(); i++){
-                std::cout << "---setting num: " << i << '\n';
-                std::cout << "parameters:\n";
-                for(const auto& [name, value] : item[i].parameters){
+            auto config = cam.get_configuration(command[1]);
+            std::cout << "name\n" << command[1] << '\n';
+            for(const auto& item : config){
+
+                std::cout << "parameters\n";
+                for(const auto& [name, value] : item.parameters){
                     std::cout << name << " = " << value << '\n';
                 }
-                std::cout << "vipath:\n";
-                for(const auto& [name, value] : item[i].VIRpath){
+                std::cout << "VIRpath\n";
+                for(const auto& [name, value] : item.VIRpath){
                     std::cout << name << " = " << value << '\n';
                 }
-                std::cout << "reqpath:\n" << item[i].REQpath << '\n';
+                std::cout << "REQpath\n" << item.REQpath << '\n';
             }
+        }
+        else if(command[0] == "save"){ // save camera configurations to a file
+            cam.save_configuration(command[1], command[2]);
+        }
+        else if(command[0] == "load"){ // load camera configurations from a file
+            cam.load_configuration(command[1]);
         }
     }
 }

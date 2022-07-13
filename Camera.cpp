@@ -26,7 +26,7 @@ namespace lb{
 
         request.pop_back();
 
-        std::cout << request << '\n';
+        //std::cout << request << '\n';
 
         if(cs.status_code(cs.send_http_request("GET", request)) != 200){
             return false;
@@ -145,5 +145,58 @@ namespace lb{
         }
 
         return item->second;
+    }
+
+    bool Camera::save_configuration(const std::string& file, const std::string& name){
+        std::ofstream writefile(file);
+        Configuration config = get_configuration(name);
+        if(config.size() == 0){
+            return false;
+        }
+        writefile << name << '\n';
+        for(const auto& item : config){
+            writefile << "parameters\n";
+            for(const auto& param : item.parameters){
+                writefile << param.first << '=' << param.second << '\n';
+            }
+            writefile << "VIRpath\n";
+            for(const auto& path : item.VIRpath){
+                writefile << path.first << '=' << path.second << '\n';
+            }
+            writefile << "REQpath\n" << item.REQpath << '\n';
+        }
+        return true;
+    }
+
+    bool Camera::load_configuration(const std::string& file){
+        std::ifstream readfile(file);
+        std::string line, name;
+        setting set;
+
+        std::getline(readfile, line);
+
+        name=line;
+        if(!create_configuration(name)){
+            return false;
+        }
+
+        while(std::getline(readfile, line) && line.size() > 0){
+            std::getline(readfile, line); int pos;
+            while((pos=line.find('='))!=std::string::npos){
+                set.parameters[line.substr(0, pos)] = line.substr(pos+1, line.size()-pos-1);
+                std::getline(readfile, line);
+            }
+            
+            std::getline(readfile, line);;
+            while((pos=line.find('='))!=std::string::npos){
+                set.VIRpath[line.substr(0, pos)] = line.substr(pos+1, line.size()-pos-1);
+                std::getline(readfile, line);
+            }
+            std::getline(readfile, line);
+            set.REQpath=line;
+
+            add_to_configuration(name, set);
+        }
+        return true;
     }
 }
