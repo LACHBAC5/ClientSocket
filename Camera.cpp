@@ -43,26 +43,30 @@ namespace lb{
         return true;
     }
 
-    bool Camera::load_settings_web(const std::string& path){
-        if(socket.open_connection()!=0){
-            return false;
-        }
-        if(socket.status_code(socket.send_http_request("GET", path)) != 200){
-            return false;
-        }
-        xml_settings_doc.parse<0>(&socket.fetch_response()[0]);
-        xml_settings_node=xml_settings_doc.first_node();
-        return true;
-    }
-
-    void Camera::load_settings_file(const std::string& path){
+    bool Camera::load_settings_xml(const std::string& name){
         std::string text, line;
-        std::ifstream file(path);
-        while(std::getline(file, line) && line.size() > 0){
-            text += line;
+        std::ifstream readfile(name);
+        if(readfile){
+            std::cout << "here\n";
+            while(std::getline(readfile, line) && line.size() > 0){
+                text += line;
+            }
+            readfile.close();
         }
+        else if(socket.open_connection()!=0 || socket.status_code(socket.send_http_request("GET", "/stw-cgi/attributes.cgi/cgis")) != 200){
+            return false;
+        }
+        else
+        {
+            text = socket.fetch_response();
+            std::ofstream writefile(name);
+            writefile << text;
+            writefile.close();
+        }
+
         xml_settings_doc.parse<0>(&text[0]);
         xml_settings_node=xml_settings_doc.first_node();
+        return true;
     }
 
     setting Camera::get_current_setting() const {

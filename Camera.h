@@ -22,8 +22,7 @@ namespace lb{
         bool apply_configuration(const Configuration& config);
         bool apply_setting(const setting& config);
 
-        bool load_settings_web(const std::string& path);
-        void load_settings_file(const std::string& path);
+        bool load_settings_xml(const std::string& name);
 
         setting get_current_setting() const;
         void clear_current_param();

@@ -36,25 +36,26 @@ std::vector<std::string> userPrompt(const std::string& message, const std::strin
 }
 
 int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=username, argv[4]=password
-    // user authentication
-    //lb::Camera cam(argv[1], argv[2], argv[3], argv[4]);
-    
-    lb::Camera cam(argv[1], argv[2], argv[3], argv[4]); cam.load_settings_file("cgis.xml");
-    /*
-    bool authenticated = false;
-    while(!authenticated){
-        cam.change_username(userPrompt("Sign in:", "Username")[0]);
-        cam.change_password(userPrompt("", "Password")[0]);
-        if(cam.apply_setting({{{"Channel", "0"}}, {{"msubmenu", "imageenhancements"}, {"action", "view"}}, "/stw-cgi/image.cgi"})){
-            std::cout << "authenticated!\n";
-            authenticated = true;
+    std::string dns, port, username, password, xml="cgis.xml";
+    for(int i = 1; i < argc; i+=2){
+        if(!strcmp(argv[i], "-dns")){
+            dns = argv[i+1];
         }
-        else
-        {
-            std::cout << "wrong password or username!\n";
+        else if(!strcmp(argv[i], "-port")){
+            port = argv[i+1];
+        }
+        else if(!strcmp(argv[i], "-user")){
+            username = argv[i+1];
+        }
+        else if(!strcmp(argv[i], "-pass")){
+            password = argv[i+1];
+        }
+        else if(!strcmp(argv[i], "-xml")){
+            xml = argv[i+1];
         }
     }
-    */
+    
+    lb::Camera cam(dns, port, username, password); cam.load_settings_xml(xml);
 
     bool quit=false;
     while(!quit){
