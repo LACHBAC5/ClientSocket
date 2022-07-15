@@ -75,7 +75,8 @@ int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=username
     // user authentication
     //lb::Camera cam(argv[1], argv[2], argv[3], argv[4]);
     
-    lb::Camera cam(argv[1], argv[2]);
+    lb::Camera cam(argv[1], argv[2], argv[3], argv[4]); cam.load_settings_file("cgis.xml");
+    /*
     bool authenticated = false;
     while(!authenticated){
         cam.change_username(userPrompt("Sign in:", "Username")[0]);
@@ -89,166 +90,43 @@ int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=username
             std::cout << "wrong password or username!\n";
         }
     }
-
-    // load xml settings menu
-    rapidxml::xml_document<char> doc;
-    std::string settings = cam.load_from_file("cgis.xml"); //std::string settings = cam.load_from_web("/stw-cgi/attributes.cgi/cgis");
-    doc.parse<0>(&settings[0]);
-    rapidxml::xml_node<char> * dir = doc.first_node();
-
-    // origin as in current path and parameters
-    lb::setting origin;  origin.REQpath = "/stw-cgi";
-    
-    // directory to be displayed to the user
-    std::string userdir;
+    */
 
     bool quit=false;
     while(!quit){
-        std::vector<std::string> command = userPrompt("", userdir);
+        std::vector<std::string> command = userPrompt("", "input");
         if(command[0] == "quit"){
             quit = true;
         }
-        else if(command[0] == "cd"){ // navigation through name as an attribute of the "dir" node children
-            std::string::const_iterator start=command[1].cbegin(), end=command[1].cend(), middle;
-            while(middle!=end){
-                middle=std::find(start, end, '/');
+        else if(command[0] == "cd"){
+            cam.enter_node_path(command[1]);
+            cam.clear_current_param();
+        }
+        else if(command[0] == "ls"){
+            std::vector<std::string> data = cam.read_node_children();
+            for(int i = 0; i < data.size(); i++){
+                std::cout << data[i] << '\n';
+            }
+        }
+        else if(command[0] == "set"){
+            cam.change_current_param(command[1], command[2]);
+        }
+        else if(command[0] == "save"){
+            auto current = cam.get_current_setting();
 
-                if(middle-start>1){
-                    std::string folder(start, middle);
-                    if(folder == ".."){
-                        if(!strcmp(dir->name(), "cgi")){
-                            origin.REQpath = "/stw-cgi";
-                        }
-                        else
-                        {
-                            origin.VIRpath.erase(dir->name());
-                        }
-                        if(!strcmp(dir->name(), "cgis") || !exitFolder(&dir)){
-                            std::cout << "Invalid directory\n";
-                            break;
-                        }
+            // camera specific
+            // setup cgi
+            auto cgi = current.VIRpath.find("cgi");
+            current.REQpath = "/stw-cgi/" + cgi->second + ".cgi";
+            current.VIRpath.erase(cgi);
+            // setup submenu
+            auto submenu = current.VIRpath.extract("submenu");
+            submenu.key() = "msubmenu";
+            current.VIRpath.insert(std::move(submenu));
 
-                        // update dir visible to the user
-                        userdir.erase(std::find(userdir.rbegin(), userdir.rend(), '/').base()-1, userdir.end());
-                    }
-                    else
-                    {
-                        if(!enterFolder(&dir, folder)){
-                            std::cout << "Invalid directory: " << folder << '\n';
-                            break;
-                        }
-
-                        // update origin
-                        if(!strcmp(dir->name(), "cgi")){
-                            origin.REQpath += "/" + folder + ".cgi";
-                        }
-                        else if(!strcmp(dir->name(), "submenu"))
-                        {
-                            origin.VIRpath["msubmenu"] = folder;
-                        }
-                        else
-                        {
-                            origin.VIRpath[dir->name()] = folder;
-                        }
-
-                        // update dir visible to the user
-                        userdir += "/" + folder;
-                    }
-                }
-
-                start=middle+1;
+            if(cam.apply_setting(current)){
+                std::cout << "success\n";
             }
-            origin.parameters.clear();
-        }
-        else if(command[0] == "ls"){ // print the children of "dir" by attribute name
-            for(auto i = dir->first_node(); i != 0; i=i->next_sibling()){
-                auto name_attribute = i->first_attribute("name");
-                if(name_attribute != 0){
-                    std::cout << name_attribute->value() << '\n';
-                }
-            }
-        }
-        else if(command[0] == "create"){ // create configuration
-            if(!cam.create_configuration(command[1])){
-                std::cout << "Configuration already exists!\n";
-            }
-        }
-        else if(command[0] == "delete"){ // delete configuration
-            if(!cam.delete_configuration(command[1])){
-                std::cout << "No such configuration!\n";
-            }
-        }
-        else if(command[0] == "add"){ // add setting to an existing configuration
-            if(!strcmp(dir->name(), "parameter")){
-                std::cout << "Only parameters can be set!\n";
-            }
-            for(int i = 2; i < command.size(); i++){
-                int pos = command[i].find('=');
-                std::string name=command[i].substr(0, pos), value=command[i].substr(pos+1, command[i].size()-pos-1);
-                // checks if name exists in the current dir
-                if(!checkName(&dir, name)){
-                    std::cout << "No such param in the current directory!\n";
-                    break;
-                }
-                origin.parameters[name]=value;
-            }
-
-            if(!cam.add_to_configuration(command[1], origin)){
-                std::cout << "No such configuration!\n";
-            }
-            else
-            {
-                origin.parameters.clear();
-            }
-        }
-        else if(command[0] == "remove"){ // remove setting from an existing configuration
-            if(!strcmp(dir->name(), "parameter")){
-                std::cout << "Only parameters can be removed!\n";
-            }
-            for(int i = 2; i < command.size(); i++){
-                origin.parameters[command[i]]="";
-            }
-
-            if(!cam.rm_from_configuration(command[1], origin)){
-                std::cout << "No such configuration!\n";
-            }
-            else
-            {
-                origin.parameters.clear();
-            }
-        }
-        else if(command[0] == "apply"){ // change camera configuration to an existing configuration
-            if(!cam.set_active_configuration(command[1])){
-                std::cout << "No such configuration!\n";
-            }
-        }
-        else if(command[0] == "print"){ // print the parameters of an existing configuration
-            auto config = cam.get_configuration(command[1]);
-            if(config.size() > 0){
-                std::cout << "name\n" << command[1] << '\n';
-                for(const auto& item : config){
-
-                    std::cout << "parameters\n";
-                    for(const auto& [name, value] : item.parameters){
-                        std::cout << name << " = " << value << '\n';
-                    }
-                    std::cout << "VIRpath\n";
-                    for(const auto& [name, value] : item.VIRpath){
-                        std::cout << name << " = " << value << '\n';
-                    }
-                    std::cout << "REQpath\n" << item.REQpath << '\n';
-                }
-            }
-            else
-            {
-                std::cout << "Empty or deleted configuration!\n";
-            }
-        }
-        else if(command[0] == "save"){ // save camera configurations to a file
-            cam.save_configuration(command[1], command[2]);
-        }
-        else if(command[0] == "load"){ // load camera configurations from a file
-            cam.load_configuration(command[1]);
         }
     }
 }

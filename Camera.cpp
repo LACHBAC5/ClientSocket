@@ -1,19 +1,19 @@
 #include "Camera.h"
 
 namespace lb{
-    Camera::Camera(const std::string& ip, const std::string& port, const std::string& username, const std::string& password) : cs(ip, port, username, password) {}
-    Camera::Camera(const std::string& ip, const std::string& port) : cs(ip, port) {}
+    Camera::Camera(const std::string& ip, const std::string& port, const std::string& username, const std::string& password) : socket(ip, port, username, password) {}
+    Camera::Camera(const std::string& ip, const std::string& port) : socket(ip, port) {}
     Camera::~Camera() {}
 
     void Camera::change_password(const std::string& password){
-        cs.change_password(password);
+        socket.change_password(password);
     }
     void Camera::change_username(const std::string& username){
-        cs.change_username(username);
+        socket.change_username(username);
     }
 
     bool Camera::apply_setting(const setting& sett){
-        cs.open_connection();
+        socket.open_connection();
         
         std::string request = sett.REQpath+'?';
 
@@ -25,10 +25,8 @@ namespace lb{
         }
 
         request.pop_back();
-
-        //std::cout << request << '\n';
-
-        if(cs.status_code(cs.send_http_request("GET", request)) != 200){
+        
+        if(socket.status_code(socket.send_http_request("GET", request)) != 200){
             return false;
         }
         
@@ -36,7 +34,7 @@ namespace lb{
     }
 
     bool Camera::apply_configuration(const Configuration& config){
-        cs.open_connection();
+        socket.open_connection();
         for(const auto& item : config){
             if(!apply_setting(item)){
                 return false;
@@ -45,158 +43,137 @@ namespace lb{
         return true;
     }
 
-    std::string Camera::load_from_file(const std::string& path){
+    bool Camera::load_settings_web(const std::string& path){
+        if(socket.open_connection()!=0){
+            return false;
+        }
+        if(socket.status_code(socket.send_http_request("GET", path)) != 200){
+            return false;
+        }
+        xml_settings_doc.parse<0>(&socket.fetch_response()[0]);
+        xml_settings_node=xml_settings_doc.first_node();
+        return true;
+    }
+
+    void Camera::load_settings_file(const std::string& path){
         std::string text, line;
         std::ifstream file(path);
         while(std::getline(file, line) && line.size() != 0){
             text += line;
         }
-        return text;
-    }
-    std::string Camera::load_from_web(const std::string& path){
-        if(cs.open_connection()!=0){
-            return "";
-        }
-        if(cs.status_code(cs.send_http_request("GET", path)) != 200){
-            return "";
-        }
-        return cs.fetch_response();
+        xml_settings_doc.parse<0>(&text[0]);
+        xml_settings_node=xml_settings_doc.first_node();
     }
 
-    bool Camera::create_configuration(const std::string& name){
-        if(configurations.find(name) != configurations.end()){
-            return false;
-        }
-        configurations.insert({name, {}});
-        return true;
+    setting Camera::get_current_setting() const {
+        return current_setting;
     }
 
-    bool Camera::delete_configuration(const std::string& name){
-        auto item = configurations.find(name);
-        if(item == configurations.end()){
-            return false;
-        }
-        configurations.erase(item);
-        return true;
+    void Camera::clear_current_param(){
+        current_setting.parameters.clear();
     }
 
-    bool Camera::add_to_configuration(const std::string& name, const setting& setting){
-        auto item = configurations.find(name);
-        if(item == configurations.end()){
-            return false;
+    void Camera::change_current_param(const std::string& name, const std::string& value){
+        current_setting.parameters[name]=value;
+    }
+
+    void Camera::rm_current_param(const std::string& name){
+        auto item = current_setting.parameters.find(name);
+        if(item == current_setting.parameters.end()){
+            return;
         }
-        bool found=false;
-        for(auto& currentSetting : item->second){
-            if(currentSetting.VIRpath == setting.VIRpath && currentSetting.REQpath == setting.REQpath){
-                for(const auto& [name, value] : setting.parameters){
-                    currentSetting.parameters[name] = value;
-                }
-                found=true; break;
+        current_setting.parameters.erase(item);
+    }
+
+    void Camera::clear_current_vpath(){
+        current_setting.VIRpath.clear();
+    }
+
+    void Camera::change_current_vpath(const std::string& name, const std::string& value){
+        current_setting.VIRpath[name]=value;
+    }
+
+    void Camera::rm_current_vpath(const std::string& name){
+        auto item = current_setting.VIRpath.find(name);
+        if(item == current_setting.VIRpath.end()){
+            return;
+        }
+        current_setting.VIRpath.erase(item);
+    }
+
+    std::string Camera::read_node_name() const {
+        return xml_settings_node->name();
+    }
+
+    std::vector<std::string> Camera::read_node_children() const {
+        std::vector<std::string> out;
+
+        for(auto item=xml_settings_node->first_node(); item!=0; item=item->next_sibling()){
+            auto attribute_name = item->first_attribute("name");
+            if(attribute_name != 0){
+                out.push_back(attribute_name->value());
             }
         }
-        if(!found){
-            configurations[name].push_back(setting);
-        }
-        return true;
+
+        return out;
     }
-
-    bool Camera::rm_from_configuration(const std::string& name, const setting& setting){
-        auto item = configurations.find(name);
-        if(item == configurations.end()){
-            // when config name doesn't match
-            return false;
-        }
-
-        for(auto& currentSetting : item->second){
-            if(currentSetting.VIRpath == setting.VIRpath && currentSetting.REQpath == setting.REQpath){
-                for(const auto& [name, value] : setting.parameters){
-                    if(currentSetting.parameters.find(name) == currentSetting.parameters.end()){
-                        // when settings do not match
-                        return false;
-                    }
-                    
-                    currentSetting.parameters.erase(name);
-                }
-
-                // when settings and dir match
+    bool Camera::search_node_child(const std::string& name) const {
+        for(auto item = xml_settings_node->first_node(); item!=0; item=item->next_sibling()){
+            auto attribute_name = item->first_attribute("name");
+            if(attribute_name != 0 && name == attribute_name->value()){
                 return true;
             }
         }
-
-        // when config name matches but dir doesn't
         return false;
     }
 
-    bool Camera::set_active_configuration(const std::string& name){
-        auto item = configurations.find(name);
-        if(item == configurations.end()){
-            return false;
-        }
+    bool Camera::enter_node_path(const std::string& path){
+        std::string::const_iterator start=path.cbegin(), end=path.cend(), middle;
+        while(middle!=end){
+            middle=std::find(start, end, '/');
 
-        apply_configuration(item->second);
-
-        return true;
-    }
-
-    Configuration Camera::get_configuration(const std::string& name){
-        auto item = configurations.find(name);
-        if(item == configurations.end()){
-            return {};
-        }
-
-        return item->second;
-    }
-
-    bool Camera::save_configuration(const std::string& file, const std::string& name){
-        std::ofstream writefile(file);
-        Configuration config = get_configuration(name);
-        if(config.size() == 0){
-            return false;
-        }
-        writefile << name << '\n';
-        for(const auto& item : config){
-            writefile << "parameters\n";
-            for(const auto& param : item.parameters){
-                writefile << param.first << '=' << param.second << '\n';
+            if(middle-start>1){
+                std::string folder(start, middle);
+                if(folder == ".."){
+                    if(!last_node()){
+                        return false;
+                    }
+                }
+                else
+                {
+                    if(!next_node(folder)){
+                        return false;
+                    }
+                }
             }
-            writefile << "VIRpath\n";
-            for(const auto& path : item.VIRpath){
-                writefile << path.first << '=' << path.second << '\n';
-            }
-            writefile << "REQpath\n" << item.REQpath << '\n';
+
+            start=middle+1;
         }
         return true;
     }
 
-    bool Camera::load_configuration(const std::string& file){
-        std::ifstream readfile(file);
-        std::string line, name;
-        setting set;
+    bool Camera::next_node(const std::string& name){
+        for(auto item = xml_settings_node->first_node(); item!=0; item=item->next_sibling()){
+            if(strcmp(item->name(), "parameter")==0){
+                continue;
+            }
+            auto attribute_name = item->first_attribute("name");
+            if(attribute_name != 0 && name == attribute_name->value()){
+                xml_settings_node=item;
+                current_setting.VIRpath[item->name()]=attribute_name->value();
+                return true;
+            }
+        }
+        return false;
+    }
 
-        std::getline(readfile, line);
-
-        name=line;
-        if(!create_configuration(name)){
+    bool Camera::last_node(){
+        auto item = xml_settings_node->parent();
+        if(item==0 || item->first_attribute("name")==0){
             return false;
         }
-
-        while(std::getline(readfile, line) && line.size() > 0){
-            std::getline(readfile, line); int pos;
-            while((pos=line.find('='))!=std::string::npos){
-                set.parameters[line.substr(0, pos)] = line.substr(pos+1, line.size()-pos-1);
-                std::getline(readfile, line);
-            }
-            
-            std::getline(readfile, line);;
-            while((pos=line.find('='))!=std::string::npos){
-                set.VIRpath[line.substr(0, pos)] = line.substr(pos+1, line.size()-pos-1);
-                std::getline(readfile, line);
-            }
-            std::getline(readfile, line);
-            set.REQpath=line;
-
-            add_to_configuration(name, set);
-        }
+        xml_settings_node=item;
+        current_setting.VIRpath.erase(item->name());
         return true;
     }
 }
