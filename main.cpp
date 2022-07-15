@@ -35,42 +35,6 @@ std::vector<std::string> userPrompt(const std::string& message, const std::strin
     return split(input, {" "});
 }
 
-bool enterFolder(rapidxml::xml_node<char> ** dir, const std::string& name){
-    if(!strcmp((*dir)->first_node()->name(), "parameter")){
-        return false;
-    }
-    for(auto i = (*dir)->first_node(); i != 0; i=i->next_sibling()){
-        auto name_attribute = i->first_attribute("name");
-        if(name_attribute != 0 && name_attribute->value() == name){
-            *dir = i;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool exitFolder(rapidxml::xml_node<char> ** dir){
-    auto folder = (*dir)->parent();
-    if(folder == 0){
-        return false;
-    }
-    *dir=folder;
-    return true;
-}
-
-bool checkName(rapidxml::xml_node<char> ** dir, const std::string& name){
-    if((*dir)->first_node() == 0){
-        return false;
-    }
-    for(auto i = (*dir)->first_node(); i != 0; i=i->next_sibling()){
-        auto name_attribute = i->first_attribute("name");
-        if(name_attribute != 0 && name_attribute->value() == name){
-            return true;
-        }
-    }
-    return false;
-}
-
 int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=username, argv[4]=password
     // user authentication
     //lb::Camera cam(argv[1], argv[2], argv[3], argv[4]);
