@@ -1,5 +1,4 @@
-#ifndef BZF_MD5_H
-#define BZF_MD5_H
+#pragma once
  
 #include <cstring>
 #include <iostream>
@@ -57,5 +56,3 @@ private:
 };
  
 std::string md5(const std::string str);
- 
-#endif

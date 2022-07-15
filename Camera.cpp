@@ -58,7 +58,7 @@ namespace lb{
     void Camera::load_settings_file(const std::string& path){
         std::string text, line;
         std::ifstream file(path);
-        while(std::getline(file, line) && line.size() != 0){
+        while(std::getline(file, line) && line.size() > 0){
             text += line;
         }
         xml_settings_doc.parse<0>(&text[0]);
@@ -106,9 +106,9 @@ namespace lb{
     }
 
     std::string Camera::read_node_child_name(const std::string& name) const {
-        for(auto item = xml_settings_node->first_node(); item!=0; item=item->next_sibling()){
+        for(auto item = xml_settings_node->first_node(); item!=nullptr; item=item->next_sibling()){
             auto attribute_name = item->first_attribute("name");
-            if(attribute_name != 0 && name == attribute_name->value()){
+            if(attribute_name != nullptr && name == attribute_name->value()){
                 return item->name();
             }
         }
@@ -118,9 +118,9 @@ namespace lb{
     std::vector<std::string> Camera::read_node_children() const {
         std::vector<std::string> out;
 
-        for(auto item=xml_settings_node->first_node(); item!=0; item=item->next_sibling()){
+        for(auto item=xml_settings_node->first_node(); item!=nullptr; item=item->next_sibling()){
             auto attribute_name = item->first_attribute("name");
-            if(attribute_name != 0){
+            if(attribute_name != nullptr){
                 out.push_back(attribute_name->value());
             }
         }
@@ -128,9 +128,9 @@ namespace lb{
         return out;
     }
     bool Camera::search_node_child(const std::string& name) const {
-        for(auto item = xml_settings_node->first_node(); item!=0; item=item->next_sibling()){
+        for(auto item = xml_settings_node->first_node(); item!=nullptr; item=item->next_sibling()){
             auto attribute_name = item->first_attribute("name");
-            if(attribute_name != 0 && name == attribute_name->value()){
+            if(attribute_name != nullptr && name == attribute_name->value()){
                 return true;
             }
         }
@@ -163,12 +163,12 @@ namespace lb{
     }
 
     bool Camera::next_node(const std::string& name){
-        for(auto item = xml_settings_node->first_node(); item!=0; item=item->next_sibling()){
+        for(auto item = xml_settings_node->first_node(); item!=nullptr; item=item->next_sibling()){
             if(strcmp(item->name(), "parameter")==0){
                 continue;
             }
             auto attribute_name = item->first_attribute("name");
-            if(attribute_name != 0 && name == attribute_name->value()){
+            if(attribute_name != nullptr && name == attribute_name->value()){
                 xml_settings_node=item;
                 current_setting.VIRpath[item->name()]=attribute_name->value();
                 return true;
@@ -179,7 +179,7 @@ namespace lb{
 
     bool Camera::last_node(){
         auto item = xml_settings_node->parent();
-        if(item==0 || item->first_attribute("name")==0){
+        if(item==nullptr || item->first_attribute("name")==nullptr){
             return false;
         }
         xml_settings_node=item;

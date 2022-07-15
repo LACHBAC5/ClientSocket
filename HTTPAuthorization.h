@@ -1,5 +1,4 @@
-#ifndef HTTPAUTHORIZATION
-#define HTTPAUTHORIZATION
+#pragma once
 
 #include <string>
 #include "md5.h"
@@ -13,5 +12,3 @@ namespace lb{
         std::string gen_authorization(const std::string& method, const std::string& uri, const std::string& username, const std::string& password) const;
     };
 }
-
-#endif

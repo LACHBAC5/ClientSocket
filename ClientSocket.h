@@ -1,5 +1,4 @@
-#ifndef CLIENTSOCKETHEADER
-#define CLIENTSOCKETHEADER
+#pragma once
 
 #include <netdb.h>
 // memset
@@ -41,5 +40,3 @@ namespace lb{
         int sock;
     };
 };
-
-#endif

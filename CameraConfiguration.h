@@ -1,5 +1,4 @@
-#ifndef CAMERACONFIGURATION
-#define CAMERACONFIGURATION
+#pragma once
 
 #include <string>
 #include <map>
@@ -32,5 +31,3 @@ namespace lb{
         std::map<std::string, Configuration> configurations {{"default", {}}};
     };
 }
-
-#endif

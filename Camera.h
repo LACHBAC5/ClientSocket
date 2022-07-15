@@ -1,5 +1,4 @@
-#ifndef CAMERAHEADER
-#define CAMERAHEADER
+#pragma once
 
 #include <string>
 #include <fstream>
@@ -55,5 +54,3 @@ namespace lb{
         setting current_setting;
     };
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef HTTPClientSocketHEADER
-#define HTTPClientSocketHEADER
+#pragma once
 
 #include <string>
 #include <vector>
@@ -43,6 +42,3 @@ namespace lb{
         lb::HTTPAuhtorization authArg;
     };
 }
-
-
-#endif
