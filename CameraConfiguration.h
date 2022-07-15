@@ -15,7 +15,7 @@ namespace lb{
 
     typedef std::vector<setting> Configuration;
 
-    class CameraConfigurations{
+    class CameraConfiguration{
         public:
         bool create_configuration(const std::string& name);
         bool delete_configuration(const std::string& name);

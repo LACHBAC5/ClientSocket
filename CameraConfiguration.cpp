@@ -1,7 +1,7 @@
 #include "CameraConfiguration.h"
 
 namespace lb{
-    bool CameraConfigurations::create_configuration(const std::string& name){
+    bool CameraConfiguration::create_configuration(const std::string& name){
         if(configurations.find(name) != configurations.end()){
             return false;
         }
@@ -9,7 +9,7 @@ namespace lb{
         return true;
     }
 
-    bool CameraConfigurations::delete_configuration(const std::string& name){
+    bool CameraConfiguration::delete_configuration(const std::string& name){
         auto item = configurations.find(name);
         if(item == configurations.end()){
             return false;
@@ -18,7 +18,7 @@ namespace lb{
         return true;
     }
 
-    bool CameraConfigurations::add_to_configuration(const std::string& name, const setting& setting){
+    bool CameraConfiguration::add_to_configuration(const std::string& name, const setting& setting){
         auto item = configurations.find(name);
         if(item == configurations.end()){
             return false;
@@ -38,7 +38,7 @@ namespace lb{
         return true;
     }
 
-    bool CameraConfigurations::rm_from_configuration(const std::string& name, const setting& setting){
+    bool CameraConfiguration::rm_from_configuration(const std::string& name, const setting& setting){
         auto item = configurations.find(name);
         if(item == configurations.end()){
             return false;
@@ -59,7 +59,7 @@ namespace lb{
         return false;
     }
 
-    bool CameraConfigurations::save_configuration(const std::string& file, const std::string& name){
+    bool CameraConfiguration::save_configuration(const std::string& file, const std::string& name){
         std::ofstream writefile(file);
         Configuration config = get_configuration(name);
         if(config.size() == 0){
@@ -80,7 +80,7 @@ namespace lb{
         return true;
     }
 
-    bool CameraConfigurations::load_configuration(const std::string& file){
+    bool CameraConfiguration::load_configuration(const std::string& file){
         std::ifstream readfile(file);
         std::string line, name;
         setting set;
@@ -112,7 +112,7 @@ namespace lb{
         return true;
     }
 
-    Configuration CameraConfigurations::get_configuration(const std::string& name){
+    Configuration CameraConfiguration::get_configuration(const std::string& name){
         auto item = configurations.find(name);
         if(item == configurations.end()){
             return {};
