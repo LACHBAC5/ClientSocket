@@ -73,7 +73,13 @@ int main(int argc, char *argv[]){ // argv[1]=DNS, argv[2]=PORT, argv[3]=username
             }
         }
         else if(command[0] == "set"){
-            cam.change_current_param(command[1], command[2]);
+            if(cam.search_node_child(command[1]) && cam.read_node_child_name(command[1]) == "parameter"){
+                cam.change_current_param(command[1], command[2]);
+            }
+            else
+            {
+                std::cout << "No such parameter!\n";
+            }
         }
         else if(command[0] == "save"){
             auto current = cam.get_current_setting();

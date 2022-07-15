@@ -38,6 +38,7 @@ namespace lb{
         void change_current_qpath(const std::string& qpath);
 
         std::string read_node_name() const;
+        std::string read_node_child_name(const std::string& name) const;
 
         std::vector<std::string> read_node_children() const;
         bool search_node_child(const std::string& name) const;

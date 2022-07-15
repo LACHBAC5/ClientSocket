@@ -105,6 +105,16 @@ namespace lb{
         return xml_settings_node->name();
     }
 
+    std::string Camera::read_node_child_name(const std::string& name) const {
+        for(auto item = xml_settings_node->first_node(); item!=0; item=item->next_sibling()){
+            auto attribute_name = item->first_attribute("name");
+            if(attribute_name != 0 && name == attribute_name->value()){
+                return item->name();
+            }
+        }
+        return "";
+    }
+
     std::vector<std::string> Camera::read_node_children() const {
         std::vector<std::string> out;
 
